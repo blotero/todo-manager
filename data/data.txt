@@ -1,0 +1,3 @@
+Make coffee, Make a specialty coffee for starting the morning, 0, 2
+Learn french, Learn yout French lessons, 0, 2
+Wash clothes, wash all your clothes, 0, 2
