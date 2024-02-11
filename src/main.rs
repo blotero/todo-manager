@@ -1,5 +1,9 @@
+mod record;
+
+use record::DataRecord;
 use std::fs;
-use std::io;
+use std::io::{self, Error, ErrorKind};
+
 use String;
 
 fn print_data_from_raw(raw: String) {
@@ -39,13 +43,42 @@ fn display_current_tasks() {
 
 fn launch_create_task_submenu() {
     println!("Creating new task!");
-    let mut buff = String::new();
+    let mut name_buff = String::new();
+    let mut desc_buff = String::new();
+    let mut priority_buff = String::new();
     println!("Enter task title>>> ");
-    io::stdin().read_line(&mut buff).unwrap();
+    io::stdin().read_line(&mut name_buff).unwrap();
     println!("Enter task description>>> ");
-    io::stdin().read_line(&mut buff).unwrap();
+    io::stdin().read_line(&mut desc_buff).unwrap();
     println!("Enter task priority>>> ");
-    io::stdin().read_line(&mut buff).unwrap();
+    io::stdin().read_line(&mut priority_buff).unwrap();
+    let mut priority: u8 = 0;
+
+    let mut succ = false;
+    while !succ {
+        match priority_buff.trim().parse::<u8>() {
+            Ok(n) => {
+                priority = n;
+                succ = true
+            }
+            Err(e) => {
+                println!("Error parsing priority: {e}");
+                println!("Please type a valid priority>>> ");
+                priority_buff.clear();
+                io::stdin().read_line(&mut priority_buff).unwrap();
+            }
+        }
+    }
+    let record = DataRecord {
+        name: name_buff.trim(),
+        description: &desc_buff.trim(),
+        priority,
+        is_done: false,
+    };
+    match record.save() {
+        Ok(n) => println!("Successfully saved record!. Wrote {} bytes", n),
+        Err(err) => println!("Error saving record :( {}", err),
+    }
 }
 
 fn launch_delete_task_submenu() {
@@ -111,15 +144,20 @@ fn populate_menu_options(op_map: &mut Vec<MenuOption>) {
     });
 }
 
-fn run_by_option_num(op_num: u8, op_map: Vec<MenuOption>)  {
+fn run_by_option_num(op_num: u8, op_map: &Vec<MenuOption>) -> Result<u8, Error> {
     for op in op_map.iter() {
         if op_num == op.option_key {
             (op.callback)();
+            return Ok(op_num);
         }
     }
+    return Err(io::Error::new(
+        ErrorKind::NotFound,
+        format!("Option: {} not available", op_num),
+    ));
 }
 
-fn launch_main_menu(op_map: Vec<MenuOption>) {
+fn launch_main_menu(op_map: &Vec<MenuOption>) {
     println!("========== MAIN MENU ==========");
 
     for op in op_map.iter() {
@@ -132,11 +170,31 @@ fn launch_main_menu(op_map: Vec<MenuOption>) {
     let mut input = String::new();
     io::stdin().read_line(&mut input).unwrap();
     let mut option: u8 = 0;
-    match input.trim().parse::<u8>() {
-        Ok(n) => option = n,
-        Err(e) => println!("Error: {e}"),
+    let mut parse_succ = false;
+    let mut run_succ = false;
+    while !parse_succ || !run_succ {
+        match input.trim().parse::<u8>() {
+            Ok(n) => {
+                option = n;
+                parse_succ = true
+            }
+            Err(e) => {
+                println!("Error: {e}");
+                println!("Please type option again>>> ");
+                input.clear();
+                io::stdin().read_line(&mut input).unwrap();
+            }
+        }
+        match run_by_option_num(option, &op_map) {
+            Ok(_) => run_succ = true,
+            Err(err) => {
+                println!("Error running option: {err}");
+                println!("Plese provide a valid option>>> ");
+                input.clear();
+                io::stdin().read_line(&mut input).unwrap();
+            }
+        }
     }
-    run_by_option_num(option, op_map);
 }
 
 fn main() {
@@ -144,5 +202,7 @@ fn main() {
     populate_menu_options(&mut op_map);
     display_welcome_msg();
     display_current_tasks();
-    launch_main_menu(op_map);
+    loop {
+        launch_main_menu(&op_map);
+    }
 }
