@@ -38,6 +38,7 @@ fn display_current_tasks() {
 }
 
 fn launch_create_task_submenu() {
+    println!("Creating new task!");
     let mut buff = String::new();
     println!("Enter task title>>> ");
     io::stdin().read_line(&mut buff).unwrap();
@@ -48,6 +49,7 @@ fn launch_create_task_submenu() {
 }
 
 fn launch_delete_task_submenu() {
+    println!("Deleting task...");
     display_current_tasks();
     let mut buff = String::new();
     println!("Select task id to delete:");
@@ -55,6 +57,7 @@ fn launch_delete_task_submenu() {
 }
 
 fn launch_modify_task_submenu() {
+    println!("Modifying existing task!");
     let mut buff = String::new();
     println!("Enter task title>>> ");
     io::stdin().read_line(&mut buff).unwrap();
@@ -65,6 +68,7 @@ fn launch_modify_task_submenu() {
 }
 
 fn launch_mark_task_as_done_submenu() {
+    println!("Marking task as done!");
     let mut buff = String::new();
     println!("Enter task title>>> ");
     io::stdin().read_line(&mut buff).unwrap();
@@ -73,14 +77,57 @@ fn launch_mark_task_as_done_submenu() {
     println!("Enter task priority>>> ");
     io::stdin().read_line(&mut buff).unwrap();
 }
+struct MenuOption {
+    option_text: String,
+    option_key: u8,
+    callback: fn(),
+}
 
-fn launch_main_menu() {
+fn populate_menu_options(op_map: &mut Vec<MenuOption>) {
+    op_map.push(MenuOption {
+        option_text: String::from("Create new task"),
+        option_key: 1,
+        callback: launch_create_task_submenu,
+    });
+    op_map.push(MenuOption {
+        option_text: String::from("Delete task"),
+        option_key: 2,
+        callback: launch_delete_task_submenu,
+    });
+    op_map.push(MenuOption {
+        option_text: String::from("Modify task"),
+        option_key: 3,
+        callback: launch_modify_task_submenu,
+    });
+    op_map.push(MenuOption {
+        option_text: String::from("Mark task as done"),
+        option_key: 4,
+        callback: launch_mark_task_as_done_submenu,
+    });
+    op_map.push(MenuOption {
+        option_text: String::from("Print all tasks"),
+        option_key: 5,
+        callback: display_current_tasks,
+    });
+}
+
+fn run_by_option_num(op_num: u8, op_map: Vec<MenuOption>)  {
+    for op in op_map.iter() {
+        if op_num == op.option_key {
+            (op.callback)();
+        }
+    }
+}
+
+fn launch_main_menu(op_map: Vec<MenuOption>) {
     println!("========== MAIN MENU ==========");
-    println!("1. Create new task");
-    println!("2. Delete task");
-    println!("3. Modify task");
-    println!("4. Mark task as done");
-    println!("5. Print all tasks\n");
+
+    for op in op_map.iter() {
+        let key = op.option_key.to_string();
+        let text = &op.option_text;
+        println!("{key}. {text}");
+    }
+
     println!("Your option: => ");
     let mut input = String::new();
     io::stdin().read_line(&mut input).unwrap();
@@ -89,19 +136,13 @@ fn launch_main_menu() {
         Ok(n) => option = n,
         Err(e) => println!("Error: {e}"),
     }
-    println!("You have chose the option: {option}");
-    match option {
-        1 => launch_create_task_submenu(),
-        2 => launch_delete_task_submenu(),
-        3 => launch_modify_task_submenu(),
-        4 => launch_mark_task_as_done_submenu(),
-        5 => display_current_tasks(),
-        _ => println!("Please select a valid option"),
-    }
+    run_by_option_num(option, op_map);
 }
 
 fn main() {
+    let mut op_map: Vec<MenuOption> = Vec::new();
+    populate_menu_options(&mut op_map);
     display_welcome_msg();
     display_current_tasks();
-    launch_main_menu();
+    launch_main_menu(op_map);
 }
